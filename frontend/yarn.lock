@@ -9006,6 +9006,11 @@ vue@^3.0.0, vue@^3.0.5:
     "@vue/runtime-dom" "3.2.12"
     "@vue/shared" "3.2.12"
 
+vuejs-snackbar@^4.0.1:
+  version "4.0.1"
+  resolved "https://registry.yarnpkg.com/vuejs-snackbar/-/vuejs-snackbar-4.0.1.tgz#a521765b0de03dea69a3fd0438a71c49dc622fcb"
+  integrity sha512-2eSjvvn8an8JZXKKxW5y5j4aZoc/zOSuYG4T0qIO6b/uUXnu0GgWYl9VrwUtkD/FkVrDPqFazFqKrW58hC/N9g==
+
 vuex@^4.0.2:
   version "4.0.2"
   resolved "https://registry.yarnpkg.com/vuex/-/vuex-4.0.2.tgz#f896dbd5bf2a0e963f00c67e9b610de749ccacc9"

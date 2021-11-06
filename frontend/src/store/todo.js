@@ -38,7 +38,8 @@ export default {
         isAssign: false,
         searchedTodo: [],
         organisation_members: [],
-        errMessage: "No Result Found"
+        errMessage: "No Result Found",
+        totalCollab:0
 
     },
     mutations: {
@@ -80,8 +81,9 @@ export default {
         },
         ORG_MEMBERS(state, data) {
             state.organisation_members = data
-
-
+        },
+        TOTAL_COLLAB (state, data){
+            state.totalCollab = data
         }
     },
     getters: {
@@ -117,6 +119,9 @@ export default {
         },
         organization(state) {
             return state.isUser.Organizations[0];
+        },
+        totalCollab (state){
+            return state.totalCollab
         }
     },
     actions: {
@@ -143,6 +148,9 @@ export default {
         },
         toggleAssign({ commit }) {
             commit('TOG_ASSIGN');
+        },
+        totalCollaborator ({commit}, count_data){
+            commit('TOTAL_COLLAB', count_data)
         },
         selectedTodo({ commit }, todo_data) {
             commit('SELECTED_TODO', todo_data)

@@ -23,6 +23,7 @@
         "vue3-circle-progress": "^1.0.6",
         "vue3-click-away": "^1.2.1",
         "vue3-mq": "^3.0.0",
+        "vuejs-snackbar": "^4.0.1",
         "vuex": "^4.0.2"
     },
     "devDependencies": {
@@ -39,7 +40,7 @@
         "sass": "^1.32.11",
         "tailwindcss": "npm:@tailwindcss/postcss7-compat@^2.2.14",
         "vue-cli-plugin-single-spa": "~3.1.2"
-    }, 
+    },
     "eslintConfig": {
         "root": true,
         "env": {

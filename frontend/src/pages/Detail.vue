@@ -67,45 +67,19 @@
 </span>
 </span>
 </span>
-                        <div v-if="isAssign"
-                            class="user_dropdown td-absolute td-p-2 td-bg-white td-rounded td-shadow td-border td-mt-12 td-top-0 td-right-0">
-                            <input @input="search()" v-model='value'
-                                class="td-rounded td-border-green-300 td-mx-auto td-w-11/12 td-border td-py-2 td-px-2 hover:td-border-green-500 td-outline-none"
-                                type="text" />
-                            <div style="min-width:40rem" class="td-h-64 td-w-100 td-overflow-y-scroll">
-                                 <label v-if="showLoading" class="td-w-100 td-flex td-justify-center">
-                <i class="pi pi-spin pi-spinner" style="font-size: 2rem"></i>
-            </label>
-                                <div v-else :for="user.user_name" v-for="(user, index) in users"
-                                    :key="index"
-                                    class="td-flex hover:td-border td-text-gray-500 hover:td-text-white hover:td-bg-green-500 td-border-b td-p-2 td-my-2 td-pb-2 td-items-center">
-                                    
-                                    <div style=" width:100%"  class="td-flex td-justify-between">
-                                        <div  class="tracking-wide  td-px-2 td-font-bold">{{user.user_name}}</div>
-                                        <div class="td-justify-self-end">
-                                            <button  v-if="!user.collaborator || user.collaborator == false" class="td-border-2 hover:td-shadow td-p-1 td-rounded td-border-white td-bg-green justify-self-end" @click="toggleCollab(user, index, true)">Add</button>
-
-                                            <button v-if="user.collaborator == true" class="hover:td-shadow  td-border-2 td-border-white td-p-1 td-rounded td-bg-red justify-self-end" @click="toggleCollab(user, index, 'admin')">Make Admin</button>
-
-                                            <button v-if="user.collaborator == true" class="hover:td-shadow  td-border-2 td-border-white td-p-1 td-rounded td-bg-red justify-self-end" @click="toggleCollab(user, index, false)">Remove</button>
-                                            </div>
-                                    </div>
-
-                                </div>
-                                        
-                            </div>
-                        </div>
+                       <!-- COLLABORATOR COMPONENT -->
+                          <Collaborator v-if="isAssign" />
                     </div>
                     
                     <!-- Collaborator admin -->
-                    <span @click="assign()" class="td-justify-center td-flex td-items-center "><i
+                    <!-- <span @click="assign()" class="td-justify-center td-flex td-items-center "><i
                                 class="pi pi-user-plus td-cursor-pointer td-px-1" /> Admin <span class="td-px-1">
                                   
                 <span style="background-color:#00b87c" class="td-rounded-full td-h-5 td-w-5 td-text-white td-flex td-items-center td-justify-center">
                 <small>{{totalCollabAdmin}}</small>
                 </span>
                 </span>
-                </span>
+                </span> -->
                 </div>
 
             </div>
@@ -185,13 +159,13 @@
     </div>
 </template>
 <script>
-    // import CollabModal from '../components/collaborators/currentCollaborators'
     import CentrifugeSetup from '../plugins/realtime'
     import TaskForm from '../components/TaskForm';
     import Empty from '../components/Empty'
     import TaskCard from '../components/TaskCard2';
     import axios from 'axios'
     import Comment from '../components/comment.vue'
+    import Collaborator from '../components/collaborators.vue'
     import { mapGetters } from 'vuex'
     export default {
         name: 'TodoDetails',
@@ -210,7 +184,6 @@
                 totalUsers:[],
                 value: '',
                 showLoading: false,
-                totalCollab:0,
                 totalCollabAdmin:0
                 
             }
@@ -219,6 +192,7 @@
             ...mapGetters({
                 allTodos: 'todos/allTodos',
                 isUser: 'todos/user',
+                totalCollab: 'todos/totalCollab',
                 centrifuge: 'todos/centrifuge'
             }),
             collaborators() {
@@ -251,7 +225,7 @@
             TaskForm,
             Empty,
             Comment,
-            // CollabModal
+            Collaborator
         },
         methods: {
             toggleModal() {
@@ -333,128 +307,6 @@
                 console.log(this.selectedTodo)
             },
 
-
-            // COLLABORATOR CODE START HERE ==============BY TJ FAITH
-            async getUser() {
-                // axios.get('https://randomuser.me/api/?results=15').
-                //     then(response => this.users = (response.data.results))
-                 this.showLoading = true
-            await axios.get(`https://api.zuri.chat/organizations/${this.isUser.currentWorkspace}/members`)
-                // .then(response =>  this.users = (response.data.results))
-                .then((response)=>{
-                    this.showLoading = false
-                    this.users = response.data.data
-                    this.totalUsers = response.data.data
-                    this.users.forEach((element,index) => {
-                        this.selectedTodo.collaborators.forEach(collab=>{
-                            if(element._id == collab.collaborator_id){
-                                this.users[index].collaborator = true
-                            }
-                        })
-                    });
-                        console.log(this.users)
-
-                    // console.log(response.data.data)
-                })
-
-            .catch((error)=>{
-                    this.showLoading = false
-                console.log(error)
-            })
-  },
-
-//   THIS FUNCTON COUNT COLLABORATOR
-            countCollaborator(){
-             this.totalCollab = this.selectedTodo.collaborators.length;
-            },
-
-             countCollaboratorAdmin(){
-                 let counter = 0;
-                 this.selectedTodo.collaborators.forEach((element, index) => {
-                     if (this.selectedTodo.collaborators[index].admin_status == '1'){
-                         counter++;
-                     }
-                 });
-             this.totalCollabAdmin = counter;
-            },
-
-            toggleCollab(user, index, value){
-                this.isAssign =false
-                if (value == true){
-                  let data={
-                    admin_status:'0',
-                    collaborator_id:user._id,
-                    user_id:this.isUser["0"]._id,
-                    email:user.email,
-                    name:user.user_name
-                 }
-                 axios.put(`https://todo.zuri.chat/api/v1/assign-collaborators/${this.selectedTodo._id}?organisation_id=${this.selectedTodo.organisation_id}`, data).then((request)=>{
-                console.log(request)
-                if(request.data.status =="success"){
-                    alert('Collaborator Added')
-                    // Update Selected Todo
-                    this.selectedTodo.collaborators.push(data)
-                     this.users[index].collaborator = value
-                    this.countCollaborator();
-                }else{
-                    alert('Oops..an error occured')
-                }
-            this.adding =false
-    
-            }).catch((error)=>{
-                    alert('Oops..an error occured')
-               
-                console.log(error)
-            this.adding =false
-
-            })
-                } else if(value == false){
-                    user.collaborator = value
-                   let index = this.selectedTodo.collaborators.findIndex(x => x.collaborator_id === user._id);
-                    this.selectedTodo.collaborators.splice(index, 1)
-                    this.countCollaborator();
-
-                } else if (value == 'admin'){
-                    // SET A COLLABORATOR AS ADMIN
-                    // CALL YOUR API HERE TO ADD ADMIN TO DATABASE =================================
-                //    API
-                //     API
-                   
-                   
-                   
-                   let index = this.selectedTodo.collaborators.findIndex(x => x.collaborator_id === user._id);
-                    this.selectedTodo.collaborators[index].admin_status = value
-                    this.countCollaboratorAdmin();
-
-                }
-                // alert(value)
-            },
-
-            search(){
-                    let value;
-            if (this.value != "") {
-                value = this.totalUsers;
-                this.users = value
-                value = this.users.filter(
-                    user =>
-                        user.user_name
-                            .toLowerCase()
-                            .indexOf(this.value.toLowerCase()) >= 0
-                );
-                 this.users = value 
-            } else {
-                this.users = this.totalUsers;
-                console.log(this.users)
-                // this.users = value;
-                // alert(value)
-            }
-
-            this.searchValue = value;
-            },
-            // COLLABORATOR CODE END HERE =================================BY TJFAITH
-
-
-          
                completeTask(any){
                 const todo_id = this.selectedTodo._id
                 const org_id = this.isUser["0"].org_id
@@ -477,8 +329,8 @@
             }
                 },
                 mounted() {
-                    this.getUser()
-                    this.countCollaborator();
+                    // this.getUser()
+                    // this.countCollaborator();
                 },
         beforeMount() {
             this.check();
