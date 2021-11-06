@@ -14,10 +14,13 @@ use App\Http\Controllers\ArchiveController;
 use App\Http\Controllers\AssignUserController;
 use App\Http\Controllers\AssignTaskUserController;
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\PluginInstallationController;
 use App\Http\Controllers\SideBar\TodoController as SideBarTodoController;
+use App\Http\Controllers\StarredTodoController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\TaskReminderController;
 use App\Http\Controllers\TaskSearchController;
+use App\Http\Controllers\TodoSearchController;
 
 /*
 | Here is where you can register API routes for your application. These
@@ -53,8 +56,10 @@ Route::prefix('v1')->group(function () {
     Route::put('/todo-update/{todoId}/{user_id}', [TodoController::class, 'updateTodo']);
 
 
-    // Admin privilege
-    Route::put('admin-privilege/{todoId}', [AdminController::class, 'adminPrivilege']);
+    Route::get('/getTasksByCategory', [TaskController::class, 'getTasksByCategory']);
+    Route::get('/taskcollection', [TaskController::class, 'taskcollection']);
+
+
 
     // api to assign and remove user from a todo room
     Route::get('task/assign/{user_id}', [AssignTaskUserController::class, 'assignedTask']);
@@ -65,6 +70,8 @@ Route::prefix('v1')->group(function () {
     Route::put('assign-collaborators/{todoId}', [AssignUserController::class, 'assign']);
     Route::put('remove-collaborators/{todoId}', [AssignUserController::class, 'remove']);
     Route::get('get-collaborators/{todoId}', [AssignUserController::class, 'fetch']);
+    // Admin privilege
+    Route::put('admin-privilege/{todoId}', [AdminController::class, 'adminPrivilege']);
 
 
 
@@ -85,8 +92,19 @@ Route::prefix('v1')->group(function () {
     Route::get('/task_collection/{id}', [TaskController::class, 'sort']);
     Route::get('/task/archived', [TaskController::class, 'archived']);
     Route::post('/archive_task/{id}', [TaskController::class, 'archive']);
-    Route::get('/search', [TodoController::class, 'search_todo']);
 
+    // Zuri Search Bar Related Routes
+    Route::get('/search/{organisation}/{user}', [TodoController::class, 'search_todo'])->name('search');
+    Route::get('/search-suggestions/{org_id}/{member_id}', [TodoController::class, 'fetchSuggestions']);
+
+
+    Route::get('/demo-search', [TodoSearchController::class, 'search']);
+
+    /**
+     * Installation enpoints
+     */
+    Route::post('/install', [PluginInstallationController::class, 'install']); //->middleware('authenticate.plugin.user');
+    Route::delete('/uninstall', [PluginInstallationController::class, 'uninstall']); //->middleware('authenticate.plugin.user');
 
 
 
@@ -113,6 +131,9 @@ Route::prefix('v1')->group(function () {
     Route::put('todo/{todo_id}/task/{task_id}/add-reminder', [TaskReminderController::class, 'addReminderToTask']);
     Route::put('todo/{todo_id}/task/{task_id}/remove-reminder/{reminder_id}', [TaskReminderController::class, 'removeReminderFromTask']);
     Route::get('test-cron-trigger', [TaskReminderController::class, 'commandHandler']);
+
+    // Star a todo
+    Route::put('star/{todo_id}', [TodoController::class, 'star']);
 
     // Plugin Info Related Enpoints
     Route::get('sidebar', [SideBarItemsController::class, 'sidebar']);

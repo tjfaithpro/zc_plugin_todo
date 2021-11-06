@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Constants\AppConstants;
 use App\Helpers\Collaborator;
 use App\Http\Requests\CollaboratorRequest;
 use App\Services\TodoService;
@@ -81,32 +82,32 @@ class AssignUserController extends Controller
 
             // Publish To Centrifugo
             $this->todoService->publishToCommonRoom(
-                $todo,
+                $removeColabo,
                 $todo['channel'],
                 null,
-                'Todo',
+                AppConstants::TYPE_COLLABORATOR,
                 $request->collaborator_id
             );
 
-            return response()->json(["status" => "success", "type" => "Todo", "data" => "User removed successfully"], 200);
+            return response()->json(["status" => AppConstants::MSG_200,  "data" => $removeColabo], 200);
         }
 
-        return response()->json(['status' => "error", 'message' => $result], 500);
+        return response()->json(['status' => AppConstants::MSG_500, 'message' => $result], AppConstants::STATUS_ERROR);
     }
 
     public function fetch($todoId)
     {
         $todo = $this->todoService->find($todoId);
 
-        if (isset($todo['status']) && $todo['status'] == 404) {
-            return response()->json($todo, 404);
+        if (isset($todo['status']) && $todo['status'] == AppConstants::STATUS_NOT_FOUND) {
+            return response()->json($todo, AppConstants::STATUS_NOT_FOUND);
         }
 
         return response()->json([
-            'status' => 'success',
-            'type' => 'Collaborator collection',
+            'status' => AppConstants::MSG_200,
+            'type' => AppConstants::TYPE_COLLABORATORS,
             'count' => count($todo['collaborators']),
-            'data' => $todo['collaborators']
+            'data' => Collaborator::sortAdminFirst($todo['collaborators'])
         ], 200);
     }
 }

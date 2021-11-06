@@ -2,20 +2,20 @@
 
 namespace App\Http\Controllers;
 
-use App\Helpers\Manipulate;
-use App\Helpers\Response;
-use App\Http\Requests\TodoRequest;
+
+use Illuminate\Http\Request;
 use App\Services\TodoService;
 use App\Services\TestTodoService;
-use Carbon\Carbon;
-use Illuminate\Http\Request;
-
+use App\Http\Requests\TodoRequest;
+use App\Http\Resources\SearchResource;
+use App\Helpers\Sort;
+use App\Providers\SidebarEvent;
 
 class TodoController extends Controller
 {
 
     protected $todoService;
-    protected $sam;
+
 
     public function __construct(TodoService $todoService, TestTodoService $testTodoService)
     {
@@ -25,75 +25,51 @@ class TodoController extends Controller
     /**
      * for testing purpose only
      */
-    public function index()
+    public function index(Request $request)
     {
+        Sort::sortAll($request);
         return $this->todoService->all();
     }
 
+    /**
+     *  createTodo is a callable to create a todo
+     */
     public function createTodo(TodoRequest $request)
     {
-
-        $channel = Manipulate::buildChannel($request->title);
-        $input =  $request->all();
-        $labels =  $request->labels !== null ? $request->labels : [];
-        $todoObject = array_merge($input, [
-            'channel' => $channel,
-            "tasks" => [],
-            "labels" => $labels,
-            "collaborators" => [],
-            "created_at" => now()
-        ]);
-
-        $result = $this->todoService->create($todoObject);
-
-        if (isset($result['object_id'])) {
-            $responseWithId = array_merge(['_id' => $result['object_id']], $todoObject);
-            $this->todoService->publishToCommonRoom($responseWithId, $channel, $input['user_id'], 'todo', null);
-            return response()->json(['status' => 'success', 'type' => 'Todo', 'data' => $responseWithId], 200);
-        }
-
-        return response()->json(['message' => $result['message']], 404);
+        return $this->todoService->createTodo($request);
     }
 
 
-
+    /**
+     *  userTodo is a callable function for fetching user active todos
+     */
     public function userTodos(Request $request)
     {
-        $where = ['user_id' => $request['user_id']];
-        $result = $this->todoService->findWhere($where);
-        $activeTodo = [];
-
-
-        if ((isset($result['status']) && $result['status'] == 404)) {
-            return response()->json(["message" => "error"], 404);
-        }
-
-        if (count($result) < 1) {
-            return response()->json(["status" => 404, 'message' => 'resource not found', 'data' => $activeTodo], 404);
-        }
-
-        for ($i = 0; $i < count($result); $i++) {
-            if (!isset($result[$i]['deleted_at']) && (!isset($result[$i]['archived_at']) || $result[$i]['archived_at'] == null)) {
-                array_push($activeTodo, $result[$i]);
-            }
-        }
-
-        return response()->json([
-            'status' => 'success',
-            'type' => 'Todo Collection',
-            'count' => count($activeTodo), 'data' => $activeTodo
-        ], 200);
+        return $this->todoService->fetchUserTodo($request);
     }
 
+    /**
+     *  search_todo is a callable function for seraching user todos
+     */
     public function search_todo(Request $request)
     {
-        $search = $this->todoService->search($request->query('key'), $request->query('q'), $request->query('user_id'));
-        if (count($search) < 1 || isset($search['status'])) {
-            return response()->json(['message' => 'No result found'], 404);
-        }
-        return response()->json($search, 200);
+        $search = $this->todoService->search($request->query('q'), $request->query('member_id'));
+        //response pagination
+        return response()->json(new SearchResource(TodoService::paginate($search, $request)), 200);
     }
 
+    /**
+     *  fetchSuggestions is a callable function for fetching possible works/phrase for  user search
+     */
+
+    public function fetchSuggestions(Request $request)
+    {
+        return $this->todoService->fetchSuggestions($request);
+    }
+
+    /**
+     *  getTodo returns detailes of a particular user todo
+     */
     public function getTodo($id, $user_id)
     {
         return  response()->json($this->todoService->findTodo($id, $user_id));
@@ -104,67 +80,16 @@ class TodoController extends Controller
         return response()->json($this->todoService->delete($todoId, $user_id));
     }
 
+    /**
+     *  updateTodo: Callable function to update a TODO
+     */
     public function updateTodo(Request $request, $todoId, $user_id)
     {
         return response()->json($this->todoService->updateTodo($request->all(), $todoId, $user_id));
     }
 
-
-    // test cache
-    public function cacheIndex()
+    public function star(Request $request, $todo_id)
     {
-        return $this->testTodoService->all();
-    }
-
-    public function cacheCreateTodo(TodoRequest $request)
-    {
-
-        $channel = Manipulate::buildChannel($request->title);
-        $input =  $request->all();
-        $labels =  $request->labels !== null ? $request->labels : [];
-        $todoObject = array_merge($input, [
-            'channel' => $channel,
-            "tasks" => [],
-            "labels" => $labels,
-            "collaborators" => [],
-            "created_at" => now()
-        ]);
-
-        $result = $this->testTodoService->create($todoObject);
-
-        if (isset($result['object_id'])) {
-            $responseWithId = array_merge(['_id' => $result['object_id']], $todoObject);
-            $this->testTodoService->publishToCommonRoom($responseWithId, $channel, $input['user_id'], 'todo', null);
-            return response()->json(['status' => 'success', 'type' => 'Todo', 'data' => $responseWithId], 200);
-        }
-
-        return response()->json(['message' => $result['message']], 404);
-    }
-
-    public function cacheUserTodos(Request $request)
-    {
-        $where = ['user_id' => $request['user_id']];
-        $result = $this->testTodoService->findWhere($where);
-        $activeTodo = [];
-
-        if ((isset($result['status']) && $result['status'] == 404)) {
-            return response()->json(["message" => "error"], 404);
-        }
-
-        if (count($result) < 1) {
-            return response()->json(["status" => 404, 'message' => 'resource not found', 'data' => $activeTodo], 404);
-        }
-
-        for ($i = 0; $i < count($result); $i++) {
-            if (!isset($result[$i]['deleted_at']) && (!isset($result[$i]['archived_at']) || $result[$i]['archived_at'] == null)) {
-                array_push($activeTodo, $result[$i]);
-            }
-        }
-
-        return response()->json([
-            'status' => 'success',
-            'type' => 'Todo Collection',
-            'count' => count($activeTodo), 'data' => $activeTodo
-        ], 200);
+        return  response()->json($this->todoService->star($request->_id, $todo_id));
     }
 }
